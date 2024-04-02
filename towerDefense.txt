@@ -1,0 +1,165 @@
+import kotlin.math.sqrt
+
+val deltaT = 0.01
+
+
+fun subtract(a: Int, b: Int): Int{
+    if (a <= b)
+    	return 0
+    return a-b
+}
+
+fun shoot(enemy: Enemy, dmg: Int){
+    enemy.takeDmg(dmg)
+}
+
+open class Entity(var x:Double, var y:Double){
+    
+    fun distanceFrom(entity: Entity): Double{
+        return sqrt((x-entity.x)*(x-entity.x) + (y-entity.y)*(y-entity.y))
+    }
+}
+
+
+class Enemy(x: Double, y: Double, var hp: Int, val armor: Int, val speed: Double): Entity(x, y){
+    
+    var isAlive: Boolean = true
+    
+    fun move(){
+        if (isAlive)
+        	x += speed * deltaT
+        else
+        	print("Enemy can't move bacause it's dead")
+    }
+    
+    fun takeDmg(dmg: Int){
+        hp = subtract(hp,subtract(dmg,armor))
+        if (hp == 0){
+            isAlive = false
+        }
+    }
+    
+    fun printStatus(){
+        println("Alive: $isAlive, Position: ($x, $y), Health: $hp")
+    }
+}
+
+
+class Tower(x: Double, y: Double, var dmg: Int, val fireRate: Int, val range: Double): Entity(x, y){
+    
+    //add targeting system
+    
+    fun shoot(enemy: Enemy){
+        enemy.takeDmg(dmg)
+    }
+    
+    fun isInRange(enemy: Enemy): Boolean{
+        if (distanceFrom(enemy) <= range)
+        	return true
+        return false
+    }
+    
+    fun fire(){
+        for(enemy in enemyList.getList()){
+            if (isInRange(enemy) && enemy.isAlive){
+                shoot(enemy)
+                break
+            }
+        }
+    }
+}
+
+
+class EnemyList(){
+    private var theList: List<Enemy> = mutableListOf()
+    
+    fun getList(): List<Enemy>{
+        return theList
+    }
+    
+    fun add(enemy: Enemy){
+        theList += enemy
+    }
+    
+    fun getEnemy(id: Int): Enemy{
+        return theList[id]
+    }
+    
+    fun enemiesLeft(): Int{
+        var counter: Int = 0
+        for(enemy in theList){
+            if(enemy.isAlive)
+            	counter++
+        }
+        return counter
+    }
+    
+    fun hpLeft(): Int {
+        var counter: Int = 0
+        for(enemy in theList){
+            counter += enemy.hp
+        }
+        return counter
+    }
+    
+    fun avgHpLeft(): Float {
+        return (hpLeft()/enemiesLeft()).toFloat()
+    }
+    
+    fun moveAll(){
+        for(enemy in theList){
+            if(enemy.isAlive){
+                enemy.move()
+            }
+        }
+    }
+    
+    fun printInfo(){
+        println("Enemies left: " + enemiesLeft())
+        println("Enemy HP left: " + hpLeft())
+        println("Average HP per enemy left: " + avgHpLeft())
+    }
+}
+
+
+class TowerList(){
+    private var theList: List<Tower> = mutableListOf()
+    
+    fun getList(): List<Tower>{
+        return theList
+    }
+    
+    fun add(tower: Tower){
+        theList += tower
+    }
+    
+    fun getTower(id: Int): Tower{
+        return theList[id]
+    }
+    
+    fun fireAll(timeStamp: Int){
+        for(tower in theList){
+            if( tower.fireRate / timeStamp == 0)
+            	tower.fire()
+        }
+    }
+}
+
+val enemyList: EnemyList = EnemyList()
+val towerList: TowerList = TowerList()
+
+
+fun main() {
+    enemyList.add(Enemy(x=0.0,y=0.0,hp=1000,armor=100,speed=0.5))
+    enemyList.add(Enemy(x=0.0,y=0.0,hp=200,armor=0,speed=1.0))
+    towerList.add(Tower(x=10.0,y=0.0,dmg=110,fireRate=1000,range=1.0))
+	var ticks = 1
+    while(ticks < 200){
+    	enemyList.moveAll()
+        towerList.fireAll(timeStamp=ticks)
+        enemyList.printInfo()
+        println()
+        ticks += 1
+	}
+    
+}
