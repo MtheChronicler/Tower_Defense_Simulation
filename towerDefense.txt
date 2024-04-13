@@ -1,6 +1,9 @@
 import kotlin.math.sqrt
 
+
 val deltaT: Double = 0.01
+val sim_time: Int = 10
+val sim_ticks: Int = (sim_time/deltaT).toInt()
 var ticks: Int = 0
 
 
@@ -10,8 +13,24 @@ fun subtract(a: Int, b: Int): Int{
     return a-b
 }
 
-fun shoot(enemy: Enemy, dmg: Int){
-    enemy.takeDmg(dmg)
+fun areEnemiesOutOfRange(): Boolean{
+    var furthestTowerRange: Double = 0.0
+    var closestEnemy: Double = 10000.0
+    for(enemy in enemyList.getList()){
+    	if(enemy.x < closestEnemy && enemy.isAlive){
+            closestEnemy = enemy.x
+        }
+    }
+    for(tower in towerList.getList()){
+        if(tower.x + tower.range > furthestTowerRange){
+        	furthestTowerRange = tower.x + tower.range
+        }
+    }
+    if(furthestTowerRange < closestEnemy){
+        return true
+    } else {
+        return false
+    }
 }
 
 open class Entity(var x:Double, var y:Double){
@@ -22,7 +41,7 @@ open class Entity(var x:Double, var y:Double){
 }
 
 
-class Enemy(x: Double, y: Double, var hp: Int, val armor: Int, val speed: Double): Entity(x, y){
+open class Enemy(x: Double, y: Double, var hp: Int, val armor: Int, val speed: Double): Entity(x, y){
     
     var isAlive: Boolean = true
     
@@ -46,11 +65,11 @@ class Enemy(x: Double, y: Double, var hp: Int, val armor: Int, val speed: Double
 }
 
 
-class Tower(x: Double, y: Double, var dmg: Int, val fireRate: Double, val range: Double): Entity(x, y){
+open class Tower(x: Double, y: Double, var dmg: Int, val fireRate: Double, val range: Double): Entity(x, y){
     
     //add targeting system
     
-    var lastTimeFired: Int = 0
+    var lastTimeFired: Int? = null
     val fireInterval: Double = 1 / (deltaT * fireRate)
     
     fun isInRange(enemy: Enemy): Boolean{
@@ -61,7 +80,15 @@ class Tower(x: Double, y: Double, var dmg: Int, val fireRate: Double, val range:
     }
     
     fun fire(){
-        if(ticks - lastTimeFired >= fireInterval){
+        if(lastTimeFired == null){
+            for(enemy in enemyList.getList()){
+            	if (isInRange(enemy) && enemy.isAlive){
+                	enemy.takeDmg(dmg)
+                    lastTimeFired = ticks
+                	break
+            	}
+        	}
+        } else if(ticks - lastTimeFired!! >= fireInterval){
             for(enemy in enemyList.getList()){
             	if (isInRange(enemy) && enemy.isAlive){
                 	enemy.takeDmg(dmg)
@@ -118,10 +145,16 @@ class EnemyList(){
         }
     }
     
-    fun printInfo(){
+    fun printInfo(full: Boolean = false){
+        if(full){
+            for(enemy in theList){
+                enemy.printStatus()
+            }
+        } else {
         println("Enemies left: " + enemiesLeft())
         println("Enemy HP left: " + hpLeft())
         println("Average HP per enemy left: " + avgHpLeft())
+        }
     }
 }
 
@@ -141,28 +174,47 @@ class TowerList(){
         return theList[id]
     }
     
-    fun fireAll(timeStamp: Int){
+    fun fireAll(){
         for(tower in theList){
             tower.fire()
         }
     }
 }
 
+
+class HeavyEnemy(): Enemy(x=0.0, y=0.0, hp=1000, armor=100, speed=0.5){}
+class LightEnemy(): Enemy(x=0.0, y=0.0, hp=100, armor=0, speed=2.5){}
+
+class HeavyTower(x: Double): Tower(x=x,y=0.0,dmg=500,fireRate=0.1,range=10.0){}
+class LightTower(x: Double): Tower(x=x,y=0.0,dmg=20,fireRate=10.0,range=2.0){}
+
 val enemyList: EnemyList = EnemyList()
 val towerList: TowerList = TowerList()
 
 
-fun main() {
-    enemyList.add(Enemy(x=0.0,y=0.0,hp=1000,armor=100,speed=0.5))
-    enemyList.add(Enemy(x=0.0,y=0.0,hp=200,armor=0,speed=1.0))
-    towerList.add(Tower(x=2.0,y=0.0,dmg=110,fireRate=10.0,range=1.0))
-    while(ticks < 700){
+fun main() {    
+    for(i in 1..2){
+        enemyList.add(HeavyEnemy())
+    }
+    for(i in 1..10){
+        enemyList.add(LightEnemy())
+    }
+    towerList.add(LightTower(x=5.0))
+    towerList.add(LightTower(x=6.0))
+    towerList.add(HeavyTower(x=20.0))
+    var prevHpLeft: Int = enemyList.hpLeft()
+    while(!areEnemiesOutOfRange()){
     	enemyList.moveAll()
-        towerList.fireAll(timeStamp=ticks)
-        println("Timestamp: $ticks")
-        enemyList.printInfo()
-        println()
+        towerList.fireAll()
+        if(prevHpLeft != enemyList.hpLeft()){
+            print("Timestamp: ")
+            print(ticks*deltaT)
+            println(" s")
+            enemyList.printInfo()
+            println()
+        }
+        prevHpLeft = enemyList.hpLeft()
         ticks += 1
 	}
-    
+    enemyList.printInfo(full=true)
 }
