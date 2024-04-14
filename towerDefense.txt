@@ -56,6 +56,7 @@ open class Enemy(x: Double, y: Double, var hp: Int, val armor: Int, val speed: D
         hp = subtract(hp,subtract(dmg,armor))
         if (hp == 0){
             isAlive = false
+            enemyList.remove(this)
         }
     }
     
@@ -65,11 +66,12 @@ open class Enemy(x: Double, y: Double, var hp: Int, val armor: Int, val speed: D
 }
 
 
-open class Tower(x: Double, y: Double, var dmg: Int, val fireRate: Double, val range: Double): Entity(x, y){
+open class Tower(x: Double, y: Double, var dmg: Int, val fireRate: Double, val range: Double, val targeting: String = "default"): Entity(x, y){
     
-    //add targeting system
+    var currentTarget: Enemy? = null
     
     var lastTimeFired: Int? = null
+    
     val fireInterval: Double = 1 / (deltaT * fireRate)
     
     fun isInRange(enemy: Enemy): Boolean{
@@ -77,6 +79,49 @@ open class Tower(x: Double, y: Double, var dmg: Int, val fireRate: Double, val r
         	return true
         else
         	return false
+    }
+    
+    fun target(){
+        //default - targets currentTarget if available, else sets a random enemy as currentTarget
+        //random - targets a random enemy
+        //closest - targets closest enemy
+        //strongest - target enemy with the most hp
+        //weakest - targets enemy with the least hp
+        when(targeting){
+            "default" -> {
+                println("Targeting system not implemented yet")
+            }
+            "random" -> {
+                println("Targeting system not implemented yet")
+            }
+            "closest" -> {
+                println("Targeting system not implemented yet")
+            }
+            "strongest" -> {
+                currentTarget = null
+                var mostHp: Int = 0
+                for(enemy in enemyList.getList()){
+                    if(isInRange(enemy)){
+                        if(enemy.hp > mostHp){
+                            currentTarget = enemy
+                            mostHp = currentTarget!!.hp
+                        }
+                    }
+                }
+            }
+            "weakest" -> {
+                currentTarget = null
+                var leastHp: Int = 2_000_000_000
+                for(enemy in enemyList.getList()){
+                    if(isInRange(enemy)){
+                        if(enemy.hp < leastHp){
+                            currentTarget = enemy
+                            leastHp = currentTarget!!.hp
+                        }
+                    }
+                }
+            }
+        }
     }
     
     fun fire(){
@@ -102,14 +147,18 @@ open class Tower(x: Double, y: Double, var dmg: Int, val fireRate: Double, val r
 
 
 class EnemyList(){
-    private var theList: List<Enemy> = mutableListOf()
+    private var theList: MutableList<Enemy> = mutableListOf()
     
     fun getList(): List<Enemy>{
         return theList
     }
     
     fun add(enemy: Enemy){
-        theList += enemy
+        theList.add(enemy)
+    }
+    
+    fun remove(enemy: Enemy){
+        theList.remove(enemy)
     }
     
     fun getEnemy(id: Int): Enemy{
@@ -160,14 +209,14 @@ class EnemyList(){
 
 
 class TowerList(){
-    private var theList: List<Tower> = mutableListOf()
+    private var theList: MutableList<Tower> = mutableListOf()
     
     fun getList(): List<Tower>{
         return theList
     }
     
     fun add(tower: Tower){
-        theList += tower
+        theList.add(tower)
     }
     
     fun getTower(id: Int): Tower{
