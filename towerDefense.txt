@@ -2,8 +2,8 @@ import kotlin.math.sqrt
 
 
 val deltaT: Double = 0.01
-val sim_time: Int = 10
-val sim_ticks: Int = (sim_time/deltaT).toInt()
+// val sim_time: Int = 10
+// val sim_ticks: Int = (sim_time/deltaT).toInt()
 var ticks: Int = 0
 
 
@@ -44,6 +44,8 @@ open class Entity(var x:Double, var y:Double){
 open class Enemy(x: Double, y: Double, var hp: Int, val armor: Int, val speed: Double): Entity(x, y){
     
     var isAlive: Boolean = true
+    
+    val baseHp: Int = hp
     
     fun move(){
         if (isAlive)
@@ -87,36 +89,80 @@ open class Tower(x: Double, y: Double, var dmg: Int, val fireRate: Double, val r
         //closest - targets closest enemy
         //strongest - target enemy with the most hp
         //weakest - targets enemy with the least hp
+        if(currentTarget != null){
+            if(currentTarget!!.isAlive == false || !isInRange(currentTarget!!)){
+                currentTarget = null
+            }
+        }
         when(targeting){
             "default" -> {
-                println("Targeting system not implemented yet")
+                if(currentTarget == null){
+                    var tempList: MutableList<Enemy> = mutableListOf()
+                    for(enemy in enemyList.getList()){
+                        if(isInRange(enemy)){
+                            tempList.add(enemy)
+                        }
+                    }
+					if(tempList.size > 0)
+                		currentTarget = tempList.random()
+                    tempList.clear()
+                }
             }
             "random" -> {
-                println("Targeting system not implemented yet")
-            }
-            "closest" -> {
-                println("Targeting system not implemented yet")
-            }
-            "strongest" -> {
-                currentTarget = null
-                var mostHp: Int = 0
+                var tempList: MutableList<Enemy> = mutableListOf()
                 for(enemy in enemyList.getList()){
                     if(isInRange(enemy)){
-                        if(enemy.hp > mostHp){
+                        tempList.add(enemy)
+                    }
+                }
+				if(tempList.size > 0)
+                	currentTarget = tempList.random()
+                tempList.clear()
+            }
+            "closest" -> {
+                var shortestDist: Double
+                if(currentTarget != null){
+                    shortestDist= distanceFrom(currentTarget!!)
+                } else {
+                    shortestDist = 2_000_000_000.0
+                }
+                for(enemy in enemyList.getList()){
+                    if(isInRange(enemy)){
+                        if(distanceFrom(enemy) < shortestDist){
                             currentTarget = enemy
-                            mostHp = currentTarget!!.hp
+                            shortestDist = distanceFrom(currentTarget!!)
+                        }
+                    }
+                }
+            }
+            "strongest" -> {
+                var mostHp: Int
+                if(currentTarget != null){
+                    mostHp = currentTarget!!.baseHp
+                } else {
+                    mostHp = 0
+                }
+                for(enemy in enemyList.getList()){
+                    if(isInRange(enemy)){
+                        if(enemy.baseHp > mostHp){
+                            currentTarget = enemy
+                            mostHp = currentTarget!!.baseHp
                         }
                     }
                 }
             }
             "weakest" -> {
-                currentTarget = null
-                var leastHp: Int = 2_000_000_000
+                var leastHp: Int
+                if(currentTarget != null){
+                    leastHp = currentTarget!!.baseHp
+                } else {
+                    leastHp = 2_000_000_000
+                }
                 for(enemy in enemyList.getList()){
                     if(isInRange(enemy)){
-                        if(enemy.hp < leastHp){
+                        if(enemy.baseHp < leastHp){
                             currentTarget = enemy
-                            leastHp = currentTarget!!.hp
+                            leastHp = currentTarget!!.baseHp
                         }
                     }
                 }
@@ -125,23 +171,18 @@ open class Tower(x: Double, y: Double, var dmg: Int, val fireRate: Double, val r
     }
     
     fun fire(){
+        target()
         if(lastTimeFired == null){
-            for(enemy in enemyList.getList()){
-            	if (isInRange(enemy) && enemy.isAlive){
-                	enemy.takeDmg(dmg)
-                    lastTimeFired = ticks
-                	break
-            	}
-        	}
+            if(currentTarget != null){
+                currentTarget!!.takeDmg(dmg)
+                lastTimeFired = ticks
+            }
         } else if(ticks - lastTimeFired!! >= fireInterval){
-            for(enemy in enemyList.getList()){
-            	if (isInRange(enemy) && enemy.isAlive){
-                	enemy.takeDmg(dmg)
-                    lastTimeFired = ticks
-                	break
-            	}
-        	}
-        } 
+            if(currentTarget != null){
+                currentTarget!!.takeDmg(dmg)
+                lastTimeFired = ticks
+            }
+        }
     }
 }
 
@@ -163,6 +204,10 @@ class EnemyList(){
     
     fun getEnemy(id: Int): Enemy{
         return theList[id]
+    }
+    
+    fun getRandom(): Enemy{
+        return theList.random()
     }
     
     fun enemiesLeft(): Int{
