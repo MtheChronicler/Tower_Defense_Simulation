@@ -1,0 +1,14 @@
+2 Light towers in the front, targeting: weakest
+1 Heavy tower in the back, targeting: strongest
+
+Enemies left: 4
+Enemy HP left: 500
+Average HP per enemy left: 125.0
+
+
+1 Heavy tower in the front, targeting: strongest
+2 Light towers in the back, targeting: weakest
+
+Enemies left: 4
+Enemy HP left: 860
+Average HP per enemy left: 215.0

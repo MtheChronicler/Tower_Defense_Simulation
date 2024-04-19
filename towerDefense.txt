@@ -279,8 +279,8 @@ class TowerList(){
 class HeavyEnemy(): Enemy(x=0.0, y=0.0, hp=1000, armor=100, speed=0.5){}
 class LightEnemy(): Enemy(x=0.0, y=0.0, hp=100, armor=0, speed=2.5){}
 
-class HeavyTower(x: Double): Tower(x=x,y=0.0,dmg=500,fireRate=0.1,range=10.0){}
-class LightTower(x: Double): Tower(x=x,y=0.0,dmg=20,fireRate=10.0,range=2.0){}
+class HeavyTower(x: Double, targeting: String = "default"): Tower(x=x,y=0.0,dmg=500,fireRate=0.1,range=10.0, targeting=targeting){}
+class LightTower(x: Double, targeting: String = "default"): Tower(x=x,y=0.0,dmg=20,fireRate=10.0,range=2.0, targeting=targeting){}
 
 val enemyList: EnemyList = EnemyList()
 val towerList: TowerList = TowerList()
@@ -293,9 +293,9 @@ fun main() {
     for(i in 1..10){
         enemyList.add(LightEnemy())
     }
-    towerList.add(LightTower(x=5.0))
-    towerList.add(LightTower(x=6.0))
-    towerList.add(HeavyTower(x=20.0))
+    towerList.add(LightTower(x=5.0, targeting="weakest"))
+    towerList.add(LightTower(x=6.0, targeting="weakest"))
+    towerList.add(HeavyTower(x=20.0, targeting="strongest"))
     var prevHpLeft: Int = enemyList.hpLeft()
     while(!areEnemiesOutOfRange()){
     	enemyList.moveAll()
